@@ -183,7 +183,7 @@ class Print3DCostCalculator {
                 <p>Material: ${this.formatCurrency(item.costs.materialCost)}</p>
                 <p>Energia: ${this.formatCurrency(item.costs.energyCostTotal)}</p>
                 <p class="final-price">Preço Final: ${this.formatCurrency(item.costs.finalPrice)}</p>
-                <button onclick="calculator.deleteHistoryItem(${index})" style="background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-top: 10px;">🗑️ Excluir</button>
+                <button onclick="calculator.deleteHistoryItem(${index})" style="background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-top: 10px;">Excluir</button>
             </div>
         `).join('');
     }
@@ -314,3 +314,4 @@ if (typeof(Storage) !== "undefined") {
 }
 
 console.log('🖨️ Calculadora de Custo de Impressão 3D carregada com sucesso!');
+
