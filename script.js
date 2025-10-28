@@ -3,6 +3,7 @@ class Print3DCostCalculator {
         this.form = document.getElementById('calculatorForm');
         this.resultsDiv = document.getElementById('results');
         this.historyList = document.getElementById('historyList');
+        this.themeToggle = document.getElementById('themeToggle');
         this.init();
     }
 
@@ -10,6 +11,8 @@ class Print3DCostCalculator {
         this.form.addEventListener('submit', (e) => this.calculateCost(e));
         document.getElementById('saveResult').addEventListener('click', () => this.saveResult());
         document.getElementById('clearHistory').addEventListener('click', () => this.clearHistory());
+        this.themeToggle.addEventListener('click', () => this.toggleTheme());
+        this.loadTheme();
         this.loadHistory();
     }
 
@@ -158,7 +161,7 @@ class Print3DCostCalculator {
         // Feedback visual
         const btn = document.getElementById('saveResult');
         const originalText = btn.textContent;
-        btn.textContent = '✅ Salvo!';
+        btn.textContent = 'Salvo!';
         btn.style.background = '#48bb78';
         
         setTimeout(() => {
@@ -177,13 +180,13 @@ class Print3DCostCalculator {
         
         this.historyList.innerHTML = history.map((item, index) => `
             <div class="history-item">
+                <button class="delete-item-btn" onclick="calculator.deleteHistoryItem(${index})" title="Excluir este item">×</button>
                 <h4>${item.data.filamentType} - ${item.data.filamentWeight}g</h4>
                 <p>Data: ${new Date(item.timestamp).toLocaleString('pt-BR')}</p>
                 <p>Tempo: ${this.formatTime(item.data.printHours, item.data.printMinutes)}</p>
                 <p>Material: ${this.formatCurrency(item.costs.materialCost)}</p>
                 <p>Energia: ${this.formatCurrency(item.costs.energyCostTotal)}</p>
                 <p class="final-price">Preço Final: ${this.formatCurrency(item.costs.finalPrice)}</p>
-                <button onclick="calculator.deleteHistoryItem(${index})" style="background: #e53e3e; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; margin-top: 10px;">Excluir</button>
             </div>
         `).join('');
     }
@@ -205,6 +208,35 @@ class Print3DCostCalculator {
     getHistory() {
         const history = localStorage.getItem('print3d_history');
         return history ? JSON.parse(history) : [];
+    }
+
+    toggleTheme() {
+        const currentTheme = document.documentElement.getAttribute('data-theme');
+        const newTheme = currentTheme === 'dark' ? 'light' : 'dark';
+        
+        document.documentElement.setAttribute('data-theme', newTheme);
+        localStorage.setItem('theme', newTheme);
+        
+        this.updateThemeButton(newTheme);
+    }
+
+    loadTheme() {
+        const savedTheme = localStorage.getItem('theme') || 'light';
+        document.documentElement.setAttribute('data-theme', savedTheme);
+        this.updateThemeButton(savedTheme);
+    }
+
+    updateThemeButton(theme) {
+        const themeIcon = document.querySelector('.theme-icon');
+        const themeText = document.querySelector('.theme-text');
+        
+        if (theme === 'dark') {
+            themeIcon.textContent = '☀️';
+            themeText.textContent = 'Claro';
+        } else {
+            themeIcon.textContent = '🌙';
+            themeText.textContent = 'Escuro';
+        }
     }
 
     formatCurrency(value) {
@@ -314,4 +346,3 @@ if (typeof(Storage) !== "undefined") {
 }
 
 console.log('🖨️ Calculadora de Custo de Impressão 3D carregada com sucesso!');
-
