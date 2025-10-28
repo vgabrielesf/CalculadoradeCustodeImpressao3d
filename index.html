@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Calculadora de Custo de Impressão 3D</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="header-content">
+                <div class="title-section">
+                    <h1>Calculadora de Custo de Impressão 3D</h1>
+                    <p>Calcule o custo total da sua impressão 3D de forma precisa</p>
+                </div>
+                <div class="theme-toggle">
+                    <button id="themeToggle" class="theme-btn" title="Alternar tema">
+                        <span class="theme-icon material-symbols-outlined">nightlight</span>
+                        <span class="theme-text">Escuro</span>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <div class="calculator">
+            <form id="calculatorForm">
+                <div class="section">
+                    <h2><span class="material-symbols-outlined">inventory_2</span> Informações do Material</h2>
+                    <div class="input-group">
+                        <label for="filamentWeight">Peso do filamento usado (g):</label>
+                        <input type="number" id="filamentWeight" min="0" step="0.1" placeholder="Ex: 25.5" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="filamentCost">Custo do filamento (R$/kg):</label>
+                        <input type="number" id="filamentCost" min="0" step="0.01" placeholder="Ex: 85.00" required>
+                    </div>
+                    <div class="input-group">
+                        <label for="filamentType">Tipo de filamento:</label>
+                        <select id="filamentType">
+                            <option value="PLA">PLA</option>
+                            <option value="ABS">ABS</option>
+                            <option value="PETG">PETG</option>
+                            <option value="TPU">TPU</option>
+                            <option value="Wood">Wood Fill</option>
+                            <option value="Metal">Metal Fill</option>
+                            <option value="Other">Outro</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2><span class="material-symbols-outlined">schedule</span> Tempo de Impressão</h2>
+                    <div class="time-inputs">
+                        <div class="input-group">
+                            <label for="printHours">Horas:</label>
+                            <input type="number" id="printHours" min="0" max="999" placeholder="0">
+                        </div>
+                        <div class="input-group">
+                            <label for="printMinutes">Minutos:</label>
+                            <input type="number" id="printMinutes" min="0" max="59" placeholder="0">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2><svg xmlns="http://www.w3.org/2000/svg" height="48px" viewBox="0 -960 960 960" width="48px" fill="#434343"><path d="M715-360v-60h95q13 0 21.5 8.5T840-390q0 12-8.5 21t-21.5 9h-95Zm0 160v-60h95q13 0 21.5 8.5T840-230q0 12-8.5 21t-21.5 9h-95Zm-155 40q-29 0-49.5-23.5T490-240h-95v-140h95q0-33 20.5-56.5T560-460h125v300H560ZM275-280q-67 0-111-43.5T120-435q0-68 44-111.5T275-590h65q33 0 54-21t21-54q0-33-21-54t-54-21H190q-12 0-21-9t-9-21q0-13 9-21.5t21-8.5h150q58 0 96.5 38.5T475-665q0 58-38.5 96.5T340-530h-65q-42 0-68.5 26T180-435q0 43 26.5 69t68.5 26h90v60h-90Z"/></svg> Custos de Energia</h2>
+                    <div class="input-group">
+                        <label for="printerPower">Potência da impressora (W):</label>
+                        <input type="number" id="printerPower" min="0" step="1" placeholder="Ex: 250" value="250">
+                    </div>
+                    <div class="input-group">
+                        <label for="energyCost">Custo da energia (R$/kWh):</label>
+                        <input type="number" id="energyCost" min="0" step="0.01" placeholder="Ex: 0.65" value="0.65">
+                    </div>
+                </div>
+
+                <div class="section">
+                    <h2><span class="material-symbols-outlined">work</span> Custos Operacionais</h2>
+                    <div class="input-group">
+                        <label for="laborCost">Custo de mão de obra (R$/h):</label>
+                        <input type="number" id="laborCost" min="0" step="0.01" placeholder="Ex: 15.00" value="0">
+                    </div>
+                    <div class="input-group">
+                        <label for="maintenanceCost">Custo de manutenção/desgaste (R$/h):</label>
+                        <input type="number" id="maintenanceCost" min="0" step="0.01" placeholder="Ex: 2.00" value="2.00">
+                    </div>
+                    <div class="input-group">
+                        <label for="profitMargin">Margem de lucro (%):</label>
+                        <input type="number" id="profitMargin" min="0" step="1" placeholder="Ex: 30" value="0">
+                    </div>
+                </div>
+
+                <button type="submit" class="calculate-btn">Calcular Custo</button>
+            </form>
+
+            <div id="results" class="results hidden">
+                <h2><span class="material-symbols-outlined">bar_chart</span> Resultado do Cálculo</h2>
+                <div class="result-grid">
+                    <div class="result-item">
+                        <span class="label">Custo do Material:</span>
+                        <span class="value" id="materialCost">R$ 0,00</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Custo de Energia:</span>
+                        <span class="value" id="energyCostResult">R$ 0,00</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Custo de Mão de Obra:</span>
+                        <span class="value" id="laborCostResult">R$ 0,00</span>
+                    </div>
+                    <div class="result-item">
+                        <span class="label">Custo de Manutenção:</span>
+                        <span class="value" id="maintenanceCostResult">R$ 0,00</span>
+                    </div>
+                    <div class="result-item total">
+                        <span class="label">Custo Total (sem lucro):</span>
+                        <span class="value" id="totalCostWithoutProfit">R$ 0,00</span>
+                    </div>
+                    <div class="result-item profit">
+                        <span class="label">Margem de Lucro:</span>
+                        <span class="value" id="profitAmount">R$ 0,00</span>
+                    </div>
+                    <div class="result-item final">
+                        <span class="label">PREÇO FINAL:</span>
+                        <span class="value" id="finalPrice">R$ 0,00</span>
+                    </div>
+                </div>
+
+                <div class="print-details">
+                    <h3><span class="material-symbols-outlined">topic</span> Detalhes da Impressão</h3>
+                    <div id="printSummary"></div>
+                </div>
+
+                <button id="saveResult" class="save-btn">Salvar Resultado</button>
+            </div>
+        </div>
+
+        <div class="history">
+            <h2><span class="material-symbols-outlined">history</span> Histórico de Cálculos</h2>
+            <div id="historyList" class="history-list">
+                <p class="empty-history">Nenhum cálculo salvo ainda.</p>
+            </div>
+            <button id="clearHistory" class="clear-btn">Limpar Histórico</button>
+        </div>
+
+        <footer>
+            <p>Desenvolvido por Vitória Gabriele.</p>
+        </footer>
+    </div>
+
+    <script src="script.js"></script>
+</body>
+</html>
