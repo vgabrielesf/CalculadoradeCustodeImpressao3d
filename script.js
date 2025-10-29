@@ -339,10 +339,11 @@ document.addEventListener('keydown', function(e) {
 
 // Verificar se localStorage está funcionando
 if (typeof(Storage) !== "undefined") {
-    console.log('✅ LocalStorage disponível - Histórico será salvo!');
+    console.log('LocalStorage disponível - Histórico será salvo!');
 } else {
-    console.log('❌ LocalStorage não disponível');
+    console.log('LocalStorage não disponível');
     alert('Seu navegador não suporta armazenamento local. O histórico não será salvo.');
 }
 
-console.log('🖨️ Calculadora de Custo de Impressão 3D carregada com sucesso!');
+console.log('Calculadora de Custo de Impressão 3D carregada com sucesso!');
+
