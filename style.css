@@ -49,7 +49,7 @@ body {
     background: var(--bg-gradient);
     min-height: 100vh;
     color: var(--text-primary);
-    line-height: 1.6;
+    line-height: 1.8;
     transition: all 0.3s ease;
 }
 
@@ -63,7 +63,7 @@ header {
     background: var(--container-bg);
     padding: 30px;
     border-radius: 15px;
-    margin-bottom: 30px;
+    margin-bottom: 32px;
     box-shadow: 0 10px 30px var(--shadow);
     transition: all 0.3s ease;
 }
@@ -138,13 +138,13 @@ header p {
     background: var(--container-bg);
     padding: 30px;
     border-radius: 15px;
-    margin-bottom: 30px;
+    margin-bottom: 32px;
     box-shadow: 0 10px 30px var(--shadow);
     transition: all 0.3s ease;
 }
 
 .section {
-    margin-bottom: 30px;
+    margin-bottom: 32px;
     padding: 20px;
     background: var(--section-bg);
     border-radius: 10px;
@@ -236,7 +236,8 @@ header p {
     border: 2px solid var(--result-border);
     border-radius: 15px;
     padding: 25px;
-    margin-top: 25px;
+    margin-top: 24px;
+    margin-bottom: 32px;
     animation: slideIn 0.5s ease;
     transition: all 0.3s ease;
 }
@@ -288,6 +289,7 @@ header p {
     border-radius: 8px;
     border-left: 4px solid var(--result-border);
     transition: all 0.3s ease;
+    margin-bottom: 16px;
 }
 
 .result-item.total {
@@ -307,6 +309,7 @@ header p {
     font-weight: 500;
     font-size: 1.2rem;
     border: 2px solid var(--result-border);
+    margin-bottom: 0;
 }
 
 .result-item .label {
@@ -326,7 +329,8 @@ header p {
     background: var(--input-bg);
     padding: 20px;
     border-radius: 10px;
-    margin-bottom: 20px;
+    margin-top: 24px;
+    margin-bottom: 32px;
     transition: all 0.3s ease;
     font-weight: 400;
 }
@@ -356,6 +360,7 @@ header p {
     font-weight: 400;
     font-family: 'Poppins', sans-serif;
     transition: all 0.3s ease;
+    margin-top: 16px;
 }
 
 .save-btn:hover {
@@ -367,7 +372,8 @@ header p {
     background: var(--history-bg);
     padding: 25px;
     border-radius: 15px;
-    margin-bottom: 20px;
+    margin-top: 24px;
+    margin-bottom: 32px;
     box-shadow: 0 10px 30px var(--shadow);
     transition: all 0.3s ease;
 }
