@@ -14,6 +14,9 @@ class Print3DCostCalculator {
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         this.loadTheme();
         this.loadHistory();
+        
+        // Event listener para gerar nota fiscal
+        document.getElementById('generateInvoice').addEventListener('click', () => this.generateInvoice());
     }
 
     calculateCost(e) {
@@ -47,7 +50,8 @@ class Print3DCostCalculator {
             energyCost: parseFloat(document.getElementById('energyCost').value) || 0,
             laborCost: parseFloat(document.getElementById('laborCost').value) || 0,
             maintenanceCost: parseFloat(document.getElementById('maintenanceCost').value) || 0,
-            profitMargin: parseFloat(document.getElementById('profitMargin').value) || 0
+            profitMargin: parseFloat(document.getElementById('profitMargin').value) || 0,
+            additionalHourlyCost: parseFloat(document.getElementById('additionalHourlyCost').value) || 0
         };
     }
 
@@ -77,17 +81,21 @@ class Print3DCostCalculator {
         // Custo de energia (potência em kW * tempo em horas * custo por kWh)
         const energyCostTotal = (data.printerPower / 1000) * printTimeHours * data.energyCost;
         
-        // Custo de mão de obra
+        // Custo de mão de obra (por hora)
         const laborCostTotal = printTimeHours * data.laborCost;
         
-        // Custo de manutenção/desgaste
-        const maintenanceCostTotal = printTimeHours * data.maintenanceCost;
+        // Custo de manutenção/desgaste (por hora) + custo adicional
+        const maintenanceCostTotal = printTimeHours * (data.maintenanceCost + data.additionalHourlyCost);
+        
+        // Custo adicional por hora (já incluído na manutenção para interface)
+        const additionalCostTotal = printTimeHours * data.additionalHourlyCost;
         
         // Custo total sem lucro
         const totalCostWithoutProfit = materialCost + energyCostTotal + laborCostTotal + maintenanceCostTotal;
         
-        // Margem de lucro
-        const profitAmount = totalCostWithoutProfit * (data.profitMargin / 100);
+        // Margem de lucro sobre o custo total (sem mão de obra para evitar dupla margem)
+        const profitBase = materialCost + energyCostTotal + maintenanceCostTotal;
+        const profitAmount = profitBase * (data.profitMargin / 100);
         
         // Preço final
         const finalPrice = totalCostWithoutProfit + profitAmount;
@@ -97,6 +105,7 @@ class Print3DCostCalculator {
             energyCostTotal,
             laborCostTotal,
             maintenanceCostTotal,
+            additionalCostTotal,
             totalCostWithoutProfit,
             profitAmount,
             finalPrice,
@@ -137,6 +146,8 @@ class Print3DCostCalculator {
             <p><strong>Custo por grama:</strong> ${this.formatCurrency(costPerGram)}</p>
             <p><strong>Custo por hora:</strong> ${this.formatCurrency(costPerHour)}</p>
             <p><strong>Potência da impressora:</strong> ${data.printerPower}W</p>
+            <p><strong>Mão de obra por hora:</strong> ${this.formatCurrency(data.laborCost)}/h</p>
+            <p><strong>Manutenção + adicional por hora:</strong> ${this.formatCurrency(data.maintenanceCost + data.additionalHourlyCost)}/h</p>
             <p><strong>Margem de lucro aplicada:</strong> ${data.profitMargin}%</p>
         `;
     }
@@ -221,7 +232,8 @@ class Print3DCostCalculator {
     }
 
     loadTheme() {
-        const savedTheme = localStorage.getItem('theme') || 'light';
+        // Sempre iniciar com tema escuro
+        const savedTheme = localStorage.getItem('theme') || 'dark';
         document.documentElement.setAttribute('data-theme', savedTheme);
         this.updateThemeButton(savedTheme);
     }
@@ -254,6 +266,167 @@ class Print3DCostCalculator {
         } else {
             return `${hours}h ${minutes}min`;
         }
+    }
+
+    generateInvoice() {
+        // Verificar se há resultados para gerar a nota fiscal
+        if (this.resultsDiv.classList.contains('hidden')) {
+            alert('Por favor, calcule o custo primeiro antes de gerar a nota fiscal.');
+            return;
+        }
+
+        // Obter dados dos campos
+        const peso = parseFloat(document.getElementById('filamentWeight').value) || 0;
+        const custoFilamento = parseFloat(document.getElementById('filamentCost').value) || 0;
+        const tipoFilamento = document.getElementById('filamentType').value;
+        const horas = parseFloat(document.getElementById('printHours').value) || 0;
+        const minutos = parseFloat(document.getElementById('printMinutes').value) || 0;
+        
+        // Obter valores dos resultados
+        const finalPrice = document.getElementById('finalPrice').textContent;
+        const material = document.getElementById('materialCost').textContent;
+        const energiaTotal = document.getElementById('energyCostResult').textContent;
+        const maoObraTotal = document.getElementById('laborCostResult').textContent;
+        const manutencaoTotal = document.getElementById('maintenanceCostResult').textContent;
+        const total = document.getElementById('totalCostWithoutProfit').textContent;
+        const lucro = document.getElementById('profitAmount').textContent;
+        
+        const dataHoje = new Date();
+        const numeroNota = `NF-${dataHoje.getFullYear()}${(dataHoje.getMonth() + 1).toString().padStart(2, '0')}${dataHoje.getDate().toString().padStart(2, '0')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
+        
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        
+        let y = 20;
+        const margin = 20;
+        const pageWidth = 210;
+        
+        // Cabeçalho da Nota Fiscal
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(16);
+        doc.text('NOTA FISCAL DE SERVIÇO', pageWidth/2, y, { align: 'center' });
+        y += 10;
+        
+        doc.setFontSize(12);
+        doc.text(`Número: ${numeroNota}`, pageWidth/2, y, { align: 'center' });
+        y += 15;
+        
+        // Dados do prestador
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('PRESTADOR DE SERVIÇOS:', margin, y);
+        y += 7;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('Nome: Vitória Gabriele', margin, y);
+        y += 5;
+        doc.text('Data de Emissão: ' + dataHoje.toLocaleDateString('pt-BR'), margin, y);
+        y += 5;
+        doc.text('Email: vgabrielesf@gmail.com', margin, y);
+        y += 15;
+        
+        // Linha separadora
+        doc.setDrawColor(0, 0, 0);
+        doc.setLineWidth(0.5);
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 10;
+        
+        // Descrição do serviço
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('DESCRIÇÃO DO SERVIÇO:', margin, y);
+        y += 10;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(10);
+        doc.text('Serviço de Impressão 3D', margin, y);
+        y += 7;
+        
+        // Especificações técnicas
+        doc.setFont('helvetica', 'bold');
+        doc.text('Especificações Técnicas:', margin, y);
+        y += 7;
+        
+        doc.setFont('helvetica', 'normal');
+        doc.text(`• Material: ${tipoFilamento}`, margin + 5, y);
+        y += 5;
+        doc.text(`• Peso do material: ${peso}g`, margin + 5, y);
+        y += 5;
+        doc.text(`• Tempo de impressão: ${this.formatTime(horas, minutos)}`, margin + 5, y);
+        y += 5;
+        doc.text(`• Data de produção: ${dataHoje.toLocaleDateString('pt-BR')}`, margin + 5, y);
+        y += 15;
+        
+        // Tabela de custos
+        doc.setFont('helvetica', 'bold');
+        doc.text('DISCRIMINAÇÃO DOS CUSTOS:', margin, y);
+        y += 10;
+        
+        // Headers da tabela
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(9);
+        const col1 = margin;
+        const col2 = margin + 80;
+        const col3 = margin + 130;
+        
+        doc.text('Descrição', col1, y);
+        doc.text('Valor Unit.', col2, y);
+        doc.text('Total', col3, y);
+        y += 5;
+        
+        // Linha da tabela
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 7;
+        
+        // Itens da tabela
+        doc.setFont('helvetica', 'normal');
+        const itens = [
+            ['Material (' + tipoFilamento + ')', material, material],
+            ['Energia elétrica', energiaTotal, energiaTotal],
+            ['Taxa de serviço', lucro, lucro],
+            ['Manutenção/Desgaste', manutencaoTotal, manutencaoTotal]
+        ];
+        
+        itens.forEach(item => {
+            doc.text(item[0], col1, y);
+            doc.text(item[1], col2, y);
+            doc.text(item[2], col3, y);
+            y += 6;
+        });
+        
+        // Linha separadora
+        y += 3;
+        doc.line(margin, y, pageWidth - margin, y);
+        y += 7;
+        
+        // Subtotal
+        doc.setFont('helvetica', 'normal');
+        doc.text('Subtotal (sem margem):', col2, y);
+        doc.text(total, col3, y);
+        y += 6;
+        
+        // Taxa de serviço
+        doc.text('Taxa de serviço:', col2, y);
+        doc.text(lucro, col3, y);
+        y += 8;
+        
+        // Total final
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text('VALOR TOTAL:', col2, y);
+        doc.text(finalPrice, col3, y);
+        y += 15;
+        
+        // Rodapé
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(8);
+        doc.text('Esta nota fiscal refere-se ao serviço de impressão 3D prestado.', margin, y);
+        y += 5;
+        doc.text('Documento gerado automaticamente pela Calculadora de Custo de Impressão 3D.', margin, y);
+        
+        // Salvar o PDF
+        doc.save(`Nota_Fiscal_${numeroNota}.pdf`);
     }
 }
 
@@ -326,7 +499,7 @@ document.getElementById('filamentCost').addEventListener('blur', function() {
 
 document.getElementById('energyCost').addEventListener('blur', function() {
     if (this.value) {
-        this.value = parseFloat(this.value).toFixed(4);
+        this.value = parseFloat(this.value).toFixed(3);
     }
 });
 
@@ -339,11 +512,265 @@ document.addEventListener('keydown', function(e) {
 
 // Verificar se localStorage está funcionando
 if (typeof(Storage) !== "undefined") {
-    console.log('LocalStorage disponível - Histórico será salvo!');
+    console.log('✅ LocalStorage disponível - Histórico será salvo!');
 } else {
-    console.log('LocalStorage não disponível');
+    console.log('❌ LocalStorage não disponível');
     alert('Seu navegador não suporta armazenamento local. O histórico não será salvo.');
 }
 
-console.log('Calculadora de Custo de Impressão 3D carregada com sucesso!');
+console.log('🖨️ Calculadora de Custo de Impressão 3D carregada com sucesso!');
 
+document.getElementById('generatePdf').addEventListener('click', function() {
+    const peso = parseFloat(document.getElementById('filamentWeight').value) || 0;
+    const custoFilamento = parseFloat(document.getElementById('filamentCost').value) || 0;
+    const tipoFilamento = document.getElementById('filamentType').value;
+    const horas = parseFloat(document.getElementById('printHours').value) || 0;
+    const minutos = parseFloat(document.getElementById('printMinutes').value) || 0;
+    const potencia = parseFloat(document.getElementById('printerPower').value) || 0;
+    const energia = parseFloat(document.getElementById('energyCost').value) || 0;
+    const maoObra = parseFloat(document.getElementById('laborCost').value) || 0;
+    const manutencao = parseFloat(document.getElementById('maintenanceCost').value) || 0;
+    const adicional = parseFloat(document.getElementById('additionalHourlyCost').value) || 0;
+    const lucroPerc = parseFloat(document.getElementById('profitMargin').value) || 0;
+
+    const material = document.getElementById('materialCost').textContent;
+    const energiaTotal = document.getElementById('energyCostResult').textContent;
+    const maoObraTotal = document.getElementById('laborCostResult').textContent;
+    const manutencaoTotal = document.getElementById('maintenanceCostResult').textContent;
+    const total = document.getElementById('totalCostWithoutProfit').textContent;
+    const lucro = document.getElementById('profitAmount').textContent;
+    const final = document.getElementById('finalPrice').textContent;
+    const printSummary = document.getElementById('printSummary').innerText;
+
+    const pesoKg = (peso / 1000).toFixed(2);
+    const potenciaKw = (potencia / 1000).toFixed(2);
+    const tempoHoras = horas + (minutos / 60);
+    const custoAdicionalTotal = (tempoHoras * adicional).toFixed(2);
+    const dataHoje = new Date().toLocaleDateString('pt-BR');
+
+    // Margens uniformes: 2cm (20mm) em todos os lados
+    const margin = 20;
+    let y = margin;
+    const pageWidth = 210;
+    const pageHeight = 297;
+    const rightX = pageWidth - margin;
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    doc.setFont('helvetica', 'normal'); // Use Helvetica para todo o texto
+    doc.setFontSize(10); // menor fonte para caber tudo
+
+    // Cabeçalho: Extrato à esquerda, Data/Material/Peso/Tempo à direita
+    //doc.setDrawColor(180, 180, 180);
+    //doc.setLineWidth(0.1);
+    //doc.line(margin, y, pageWidth - margin, y);
+    y += 5;
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(12);
+    doc.text('Custo de Produção', margin, y, {align: 'left'});
+    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+    doc.text('Impressão 669 esc.: 1:40', margin, y, {align: 'left'});
+    doc.setFontSize(9);
+    doc.setFont('helvetica', 'normal');
+    doc.text(`Data: ${dataHoje}`, rightX, y, {align: 'right'});
+    y += 5;
+    doc.text(`Material: ${tipoFilamento}`, rightX, y, {align: 'right'});
+    y += 5;
+    doc.text(`Peso: ${peso}g (${pesoKg}kg)`, rightX, y, {align: 'right'});
+    y += 5;
+    doc.text(`Tempo: ${tempoHoras}h`, rightX, y, {align: 'right'});
+    y += 5;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(10);
+
+    // Bloco: Resumo dos Totais (duas colunas)
+    doc.setFont('helvetica', 'bold');
+    doc.setFontSize(11);
+    doc.text('Resumo', margin, y);
+    y += 7;
+    doc.setFont('helvetica', 'normal');
+    doc.setFontSize(9);
+    const resumoLeft = [
+        `Material: ${material}`,
+        `Energia: ${energiaTotal}`,
+        `Mão de Obra: ${maoObraTotal}`,
+        `Manutenção: ${manutencaoTotal}`
+    ];
+    const resumoRight = [
+        `Adicional: R$${custoAdicionalTotal}`,
+        `Total: ${total}`,
+        `Taxa de Serviço: ${lucroPerc}% (${lucro})`,
+        `Preço final: ${final}`
+    ];
+    let resumoY = y;
+    resumoLeft.forEach((txt, i) => {
+        doc.text(txt, margin, resumoY);
+        resumoY += 6;
+    });
+    resumoY = y;
+    resumoRight.forEach((txt, i) => {
+        if (txt.startsWith('Preço final:')) {
+            doc.setFont('helvetica', 'bold');
+            doc.setTextColor(0, 102, 0); // Dark green for resumo
+            doc.text(txt, margin + 60, resumoY);
+            doc.setTextColor(0, 0, 0);
+            doc.setFont('helvetica', 'normal');
+        } else {
+            doc.text(txt, margin + 60, resumoY);
+        }
+        resumoY += 6;
+    });
+    y += Math.max(resumoLeft.length, resumoRight.length) * 6 + 2;
+
+    doc.line(margin, y, pageWidth - margin, y);
+    y += 6;
+
+    // Corpo detalhado em duas colunas: dados e resultado à esquerda (resultado em vermelho), cálculos à direita
+    // Define largura total da divisória para alinhar com o grid de resultados
+    const dividerWidth = 120; // ajuste conforme o grid do PDF
+    // Função para desenhar texto com quebra automática respeitando a borda direita do cabeçalho
+    function drawTextWrapped(txt, x, y, maxWidth) {
+        const lines = doc.splitTextToSize(txt, maxWidth);
+        lines.forEach(line => {
+            doc.text(line, x, y);
+            y += 7;
+        });
+        return y;
+    }
+
+    // Espaço extra antes do primeiro bloco detalhado
+    y += 5;
+    const contentMaxWidth = rightX - margin; // largura máxima entre margem esquerda e borda virtual direita
+
+    function blocoDuplo(titulo, dados, calculos, resultado) {
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(11);
+        doc.text(titulo, margin, y);
+        y += 8;
+        doc.setFont('helvetica', 'normal');
+        doc.setFontSize(9);
+        let dadosY = y;
+        dados.forEach(txt => {
+            dadosY = drawTextWrapped(txt, margin, dadosY, contentMaxWidth - 10);
+        });
+        if (resultado) {
+            if (resultado.startsWith('Preço Final:')) {
+                doc.setTextColor(0, 102, 0);
+                doc.setFont('helvetica', 'bold');
+                dadosY = drawTextWrapped(resultado, margin, dadosY, contentMaxWidth - 10);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('helvetica', 'normal');
+                dadosY += 8;
+            } else {
+                doc.setTextColor(255, 100, 100);
+                doc.setFont('helvetica', 'bold');
+                dadosY = drawTextWrapped(resultado, margin, dadosY, contentMaxWidth - 10);
+                doc.setTextColor(0, 0, 0);
+                doc.setFont('helvetica', 'normal');
+                dadosY += 8;
+            }
+        }
+        let calcY = y;
+        calculos.forEach(txt => {
+            calcY = drawTextWrapped(txt, margin + 80, calcY, contentMaxWidth - 90);
+        });
+        let dividerY = Math.max(dadosY, calcY) + 1;
+        y = dividerY + 12;
+        // Adiciona divisória horizontal fina e escura de ponta a ponta após cada bloco
+        doc.setDrawColor(180, 180, 180);
+        doc.setLineWidth(0.1);
+        doc.line(margin, dividerY, pageWidth - margin, dividerY);
+        if (y > 270) {
+            doc.addPage();
+            y = margin;
+        }
+    }
+
+    // Espaço extra antes do primeiro bloco detalhado
+    
+    blocoDuplo('1. Custo do Material', [
+        `Peso do filamento usado: ${peso}g`,
+        `Custo do filamento: R$ ${custoFilamento.toFixed(2)} por kg`
+    ], [
+        'Cálculo:',
+        `${peso}g = ${pesoKg}kg`,
+        `Custo = ${pesoKg} × ${custoFilamento.toFixed(2)} = R$ ${material}`
+    ], `Custo: R$ ${material}`);
+
+    blocoDuplo('2. Custo de Energia', [
+        `Potência da impressora: ${potencia}W`,
+        `Tempo de impressão: ${tempoHoras} horas`,
+        `Custo da energia: R$ ${energia.toFixed(4)} por kWh`
+    ], [
+        'Cálculo:',
+        `Potência em kW = ${potencia} / 1000 = ${potenciaKw} kW`,
+        `Custo = ${potenciaKw} × ${tempoHoras} × ${energia.toFixed(4)} = ${(potenciaKw * tempoHoras).toFixed(2)} × ${energia.toFixed(4)} = R$ ${parseFloat(energiaTotal.replace('R$','').replace(',','.')).toFixed(2)}`
+    ], `Custo: ${energiaTotal}`);
+
+    blocoDuplo('3. Custo de Mão de Obra', [
+        `Valor fixo: R$ ${maoObra.toFixed(2)}`
+    ], [
+        'Cálculo:',
+        `Custo = R$ ${maoObraTotal}`
+    ], `Custo: ${maoObraTotal}`);
+
+    blocoDuplo('4. Custo de Manutenção/Desgaste', [
+        `Valor por hora: R$ ${manutencao.toFixed(2)}`
+    ], [
+        'Cálculo:',
+        `Custo = ${tempoHoras} × ${manutencao.toFixed(2)} = R$ ${manutencaoTotal}`
+    ], `Custo: ${manutencaoTotal}`);
+
+    blocoDuplo('5. Custo Adicional por Hora', [
+        `Valor por hora: R$ ${adicional.toFixed(2)}`
+    ], [
+        'Cálculo:',
+        `Custo = ${tempoHoras} × ${adicional.toFixed(2)} = R$ ${custoAdicionalTotal}`
+    ], `Custo: R$ ${custoAdicionalTotal}`);
+
+    blocoDuplo('6. Custo Total (sem lucro)', [], [
+        'Cálculo:',
+        `Material + Energia + Mão de Obra + Manutenção + Adicional`,
+        `= ${material} + ${energiaTotal} + ${maoObraTotal} + ${manutencaoTotal} + ${custoAdicionalTotal}`,
+        `= R$ ${total}`
+    ], `Total: ${total}`);
+
+    blocoDuplo('7. Taxa de Serviço', [
+        `Percentual: ${lucroPerc}%`
+    ], [
+        'Cálculo:',
+        `Taxa = ${lucroPerc}% sobre material, energia e manutenção = R$ ${lucro}`
+    ], `Taxa de Serviço: R$ ${lucro}`);
+
+        // Bloco Detalhes da Impressão em duas colunas
+    const finalValue = parseFloat(final.replace(/[^\d,\.]/g, '').replace(',', '.'));
+    const custoPorGrama = peso > 0 ? (finalValue / peso) : 0;
+    const custoPorHora = tempoHoras > 0 ? (finalValue / tempoHoras) : 0;
+    const detalhesDados = [
+        `Material: ${tipoFilamento}`,
+        `Peso do filamento: ${peso}g`,
+        `Tempo de impressão: ${tempoHoras} horas`,
+        `Potência da impressora: ${potencia}W`,
+        `Margem de lucro aplicada: ${lucroPerc}%`
+    ];
+    const detalhesCalculos = [
+        `Custo por grama: ${final} / ${peso} = R$ ${custoPorGrama.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`,
+        `Custo por hora: ${final} / ${tempoHoras} = R$ ${custoPorHora.toLocaleString('pt-BR', {minimumFractionDigits: 2, maximumFractionDigits: 2})}`
+    ];
+    blocoDuplo('8. Detalhes da Impressão', detalhesDados, detalhesCalculos, '');
+
+    blocoDuplo('9. Preço Final', [], [
+        'Cálculo:',
+        `Preço Final = ${total} + ${lucro} = R$ ${final}`
+    ], `Preço Final: ${final}`); // Changed label and made it uppercase for emphasis
+
+
+    // Adiciona rodapé do relatório
+    doc.setFont('helvetica', 'italic');
+    doc.setFontSize(10);
+    doc.text('Relatório gerado automaticamente. © Vitória Gabriele', margin, pageHeight - 10);
+
+    doc.save(`Fatura_Impressao3D_${dataHoje.replace(/\//g, '-')}.pdf`);
+});
