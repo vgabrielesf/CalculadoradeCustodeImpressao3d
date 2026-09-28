@@ -606,7 +606,19 @@ footer a:hover {
     }
     
     header h1 {
-        font-size: 2rem;
+        font-size: 1.5rem;
+    }
+
+    .section h2 {
+        font-size: 1.1rem;
+    }
+
+    .results h2 {
+        font-size: 1.1rem;
+    }
+
+    .history h2 {
+        font-size: 1.1rem;
     }
     
     .time-inputs {
@@ -616,6 +628,18 @@ footer a:hover {
     .section-heading-row {
         align-items: flex-start;
         flex-direction: column;
+        gap: 0;
+    }
+
+    .section-heading-row h2 {
+        margin-bottom: 4px;
+    }
+
+    .section-heading-row .quote-toggle {
+        margin-top: 0;
+        width: 100%;
+        align-self: stretch;
+        text-align: center;
     }
 
     .block-row {
