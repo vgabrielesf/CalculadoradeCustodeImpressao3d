@@ -47,8 +47,8 @@ class Print3DCostCalculator {
             panel.classList.toggle('hidden');
             const isActive = !panel.classList.contains('hidden');
             document.getElementById('toggleBlockQuote').textContent = isActive
-                ? 'Desativar cotação por bloco'
-                : 'Ativar cotação por bloco';
+                ? 'Ocultar produtos da nota'
+                : 'Adicionar produtos à nota';
             if (isActive && document.getElementById('blockRows').children.length === 0) {
                 this.addBlockRow();
             }
@@ -61,7 +61,7 @@ class Print3DCostCalculator {
         const row = document.createElement('div');
         row.className = 'block-row';
         row.innerHTML = `
-            <div><label>Bloco</label><input class="block-number" type="number" min="1" step="1" value="${blockRows.children.length + 1}"></div>
+            <div><label>Produto</label><input class="block-product" type="text" placeholder="Ex: Suporte"></div>
             <div><label>Peso (g)</label><input class="block-weight" type="text" inputmode="decimal" placeholder="Ex: 25,5"></div>
             <div><label>Horas</label><input class="block-hours" type="number" min="0" step="1" value="0"></div>
             <div><label>Minutos</label><input class="block-minutes" type="number" min="0" max="59" step="1" value="0"></div>
@@ -398,7 +398,8 @@ class Print3DCostCalculator {
         const dimensions = document.getElementById('dimensions').value.trim() || 'Não informado';
         const blocks = Array.from(document.querySelectorAll('.block-row'))
             .map((row, index) => ({
-                number: row.querySelector('.block-number').value || index + 1,
+                number: index + 1,
+                product: row.querySelector('.block-product').value.trim() || `Produto ${index + 1}`,
                 weight: parseLocalizedNumber(row.querySelector('.block-weight').value),
                 hours: parseLocalizedNumber(row.querySelector('.block-hours').value),
                 minutes: parseLocalizedNumber(row.querySelector('.block-minutes').value)
@@ -638,36 +639,42 @@ class Print3DCostCalculator {
         }
 
         if (blocks.length > 0) {
-            this.drawBlockQuotePage(doc, blocks, blue, orange, gray);
+            this.drawBlockQuotePage(doc, blocks, blue, orange, gray, finalPrice, complete);
         }
 
         doc.save(`Nota_de_Servico_${numeroNota}.pdf`);
     }
 
-    drawBlockQuotePage(doc, blocks, blue, orange, gray) {
+    drawBlockQuotePage(doc, blocks, blue, orange, gray, finalPrice, complete) {
         doc.addPage();
         doc.setTextColor(...blue);
         doc.setFont('helvetica', 'bold');
         doc.setFontSize(18);
-        doc.text('COTAÇÃO POR BLOCOS', 105, 25, { align: 'center' });
+        doc.text('PRODUTOS DA NOTA', 105, 25, { align: 'center' });
 
-        const columns = { number: 25, weight: 70, hours: 115, minutes: 155 };
+        const columns = complete
+            ? { product: 25, weight: 105, hours: 140, minutes: 170 }
+            : { product: 25, price: 145 };
         doc.setFillColor(...blue);
         doc.roundedRect(21, 35, 168, 17, 2, 2, 'F');
         doc.setFontSize(10);
         doc.setTextColor(255, 255, 255);
-        doc.text('Bloco', columns.number, 45);
-        doc.text('Peso (g)', columns.weight, 45);
-        doc.text('Horas', columns.hours, 45);
-        doc.text('Minutos', columns.minutes, 45);
+        doc.text('Produto', columns.product, 45);
+        if (complete) {
+            doc.text('Peso (g)', columns.weight, 45);
+            doc.text('Horas', columns.hours, 45);
+            doc.text('Minutos', columns.minutes, 45);
+        } else {
+            doc.text('Preço individual', columns.price, 45);
+        }
 
         let y = 60;
-        let totalWeight = 0;
+        const totalWeight = blocks.reduce((sum, block) => sum + block.weight, 0);
         let totalMinutes = 0;
+        const totalPrice = parseLocalizedNumber(finalPrice);
         doc.setFont('helvetica', 'normal');
         doc.setTextColor(...gray);
         blocks.forEach((block, index) => {
-            totalWeight += block.weight;
             totalMinutes += block.hours * 60 + block.minutes;
             if (index % 2 === 0) {
                 doc.setFillColor(244, 248, 253);
@@ -676,10 +683,17 @@ class Print3DCostCalculator {
             doc.setDrawColor(220, 228, 238);
             doc.setLineWidth(0.2);
             doc.line(21, y + 4, 189, y + 4);
-            doc.text(String(block.number), columns.number, y);
-            doc.text(block.weight.toFixed(2).replace('.', ','), columns.weight, y);
-            doc.text(String(block.hours), columns.hours, y);
-            doc.text(String(block.minutes), columns.minutes, y);
+            doc.text(block.product, columns.product, y);
+            if (complete) {
+                doc.text(block.weight.toFixed(2).replace('.', ','), columns.weight, y);
+                doc.text(String(block.hours), columns.hours, y);
+                doc.text(String(block.minutes), columns.minutes, y);
+            } else {
+                const individualPrice = totalWeight > 0
+                    ? totalPrice * (block.weight / totalWeight)
+                    : 0;
+                doc.text(this.formatCurrency(individualPrice), columns.price, y);
+            }
             y += 9;
         });
 
@@ -692,9 +706,13 @@ class Print3DCostCalculator {
         doc.setFont('helvetica', 'bold');
         doc.setTextColor(255, 255, 255);
         doc.text('TOTAIS', 25, y);
-        doc.text(`${totalWeight.toFixed(2).replace('.', ',')} g`, columns.weight, y);
-        doc.text(`${totalHours}h`, columns.hours, y);
-        doc.text(`${remainingMinutes} min`, columns.minutes, y);
+        if (complete) {
+            doc.text(`${totalWeight.toFixed(2).replace('.', ',')} g`, columns.weight, y);
+            doc.text(`${totalHours}h`, columns.hours, y);
+            doc.text(`${remainingMinutes} min`, columns.minutes, y);
+        } else {
+            doc.text(this.formatCurrency(totalPrice), columns.price, y);
+        }
     }
 }
 
