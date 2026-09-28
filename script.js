@@ -30,6 +30,7 @@ class Print3DCostCalculator {
         document.getElementById('clearHistory').addEventListener('click', () => this.clearHistory());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         document.getElementById('printTechnology').addEventListener('change', () => this.updatePrintTechnology());
+        this.initBlockQuote();
         document.getElementById('serviceNumber').value = this.createInvoiceNumber();
         this.updatePrintTechnology();
         this.loadTheme();
@@ -38,6 +39,58 @@ class Print3DCostCalculator {
         // Event listener para gerar nota fiscal
         document.getElementById('generateInvoice').addEventListener('click', () => this.generateInvoice());
         document.getElementById('generateCompleteInvoice').addEventListener('click', () => this.generateInvoice(true));
+    }
+
+    initBlockQuote() {
+        const panel = document.getElementById('blockQuotePanel');
+        document.getElementById('toggleBlockQuote').addEventListener('click', () => {
+            panel.classList.toggle('hidden');
+            const isActive = !panel.classList.contains('hidden');
+            document.getElementById('toggleBlockQuote').textContent = isActive
+                ? 'Desativar cotação por bloco'
+                : 'Ativar cotação por bloco';
+            if (isActive && document.getElementById('blockRows').children.length === 0) {
+                this.addBlockRow();
+            }
+        });
+        document.getElementById('addBlock').addEventListener('click', () => this.addBlockRow());
+    }
+
+    addBlockRow() {
+        const blockRows = document.getElementById('blockRows');
+        const row = document.createElement('div');
+        row.className = 'block-row';
+        row.innerHTML = `
+            <div><label>Bloco</label><input class="block-number" type="number" min="1" step="1" value="${blockRows.children.length + 1}"></div>
+            <div><label>Peso (g)</label><input class="block-weight" type="text" inputmode="decimal" placeholder="Ex: 25,5"></div>
+            <div><label>Horas</label><input class="block-hours" type="number" min="0" step="1" value="0"></div>
+            <div><label>Minutos</label><input class="block-minutes" type="number" min="0" max="59" step="1" value="0"></div>
+            <button type="button" class="remove-block-btn" title="Remover bloco">Remover</button>
+        `;
+        row.querySelectorAll('input').forEach((input) => input.addEventListener('input', () => this.updateBlockTotals()));
+        row.querySelector('.remove-block-btn').addEventListener('click', () => {
+            row.remove();
+            this.updateBlockTotals();
+        });
+        blockRows.appendChild(row);
+        this.updateBlockTotals();
+    }
+
+    updateBlockTotals() {
+        let totalWeight = 0;
+        let totalMinutes = 0;
+        document.querySelectorAll('.block-row').forEach((row) => {
+            totalWeight += parseLocalizedNumber(row.querySelector('.block-weight').value);
+            totalMinutes += (parseLocalizedNumber(row.querySelector('.block-hours').value) * 60);
+            totalMinutes += parseLocalizedNumber(row.querySelector('.block-minutes').value);
+        });
+        const totalHours = Math.floor(totalMinutes / 60);
+        const remainingMinutes = totalMinutes % 60;
+        document.getElementById('blocksTotalWeight').textContent = `${totalWeight.toFixed(2).replace('.', ',')} g`;
+        document.getElementById('blocksTotalTime').textContent = `${totalHours}h ${remainingMinutes}min`;
+        document.getElementById('filamentWeight').value = totalWeight ? totalWeight.toFixed(2) : '';
+        document.getElementById('printHours').value = totalHours || '';
+        document.getElementById('printMinutes').value = remainingMinutes || '';
     }
 
     updatePrintTechnology() {
@@ -343,6 +396,14 @@ class Print3DCostCalculator {
         const wallLoops = document.getElementById('wallLoops').value.trim();
         const printId = document.getElementById('printId').value.trim() || 'Não informado';
         const dimensions = document.getElementById('dimensions').value.trim() || 'Não informado';
+        const blocks = Array.from(document.querySelectorAll('.block-row'))
+            .map((row, index) => ({
+                number: row.querySelector('.block-number').value || index + 1,
+                weight: parseLocalizedNumber(row.querySelector('.block-weight').value),
+                hours: parseLocalizedNumber(row.querySelector('.block-hours').value),
+                minutes: parseLocalizedNumber(row.querySelector('.block-minutes').value)
+            }))
+            .filter((block) => block.weight > 0 || block.hours > 0 || block.minutes > 0);
         const pixEmail = 'vgabrielesf@gmail.com';
         const pixCopyPaste = '00020126430014BR.GOV.BCB.PIX0121vgabrielesf@gmail.com5204000053039865802BR5925VITORIA GABRIELE DA SILVA6009SAO PAULO622605222TJx4MlFaAnTxLSFl8BDPo63047CDC';
         const finalPrice = document.getElementById('finalPrice').textContent;
@@ -389,7 +450,7 @@ class Print3DCostCalculator {
                 if (pendingIcons === 0) {
                     this.drawInvoiceContent(doc, {
                         blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice,
-                        numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pixEmail, pixCopyPaste, pessoa, papel, enterprise, calendario, impressora, pix, complete
+                        numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pixEmail, pixCopyPaste, blocks, pessoa, papel, enterprise, calendario, impressora, pix, complete
                     });
                 }
             };
@@ -455,7 +516,7 @@ class Print3DCostCalculator {
     }
 
     drawInvoiceContent(doc, details) {
-        const { blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice, numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pixEmail, pixCopyPaste, pessoa, papel, enterprise, calendario, impressora, pix, complete } = details;
+        const { blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice, numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pixEmail, pixCopyPaste, blocks, pessoa, papel, enterprise, calendario, impressora, pix, complete } = details;
         const section = (number, title, y) => {
             doc.setFillColor(...orange);
             doc.circle(margin + 3, y - 0.2, 3.2, 'F');
@@ -576,7 +637,64 @@ class Print3DCostCalculator {
             doc.text(finalPrice, 137, totalLineY + 24);
         }
 
+        if (blocks.length > 0) {
+            this.drawBlockQuotePage(doc, blocks, blue, orange, gray);
+        }
+
         doc.save(`Nota_de_Servico_${numeroNota}.pdf`);
+    }
+
+    drawBlockQuotePage(doc, blocks, blue, orange, gray) {
+        doc.addPage();
+        doc.setTextColor(...blue);
+        doc.setFont('helvetica', 'bold');
+        doc.setFontSize(18);
+        doc.text('COTAÇÃO POR BLOCOS', 105, 25, { align: 'center' });
+
+        const columns = { number: 25, weight: 70, hours: 115, minutes: 155 };
+        doc.setFillColor(...blue);
+        doc.roundedRect(21, 35, 168, 17, 2, 2, 'F');
+        doc.setFontSize(10);
+        doc.setTextColor(255, 255, 255);
+        doc.text('Bloco', columns.number, 45);
+        doc.text('Peso (g)', columns.weight, 45);
+        doc.text('Horas', columns.hours, 45);
+        doc.text('Minutos', columns.minutes, 45);
+
+        let y = 60;
+        let totalWeight = 0;
+        let totalMinutes = 0;
+        doc.setFont('helvetica', 'normal');
+        doc.setTextColor(...gray);
+        blocks.forEach((block, index) => {
+            totalWeight += block.weight;
+            totalMinutes += block.hours * 60 + block.minutes;
+            if (index % 2 === 0) {
+                doc.setFillColor(244, 248, 253);
+                doc.rect(21, y - 7, 168, 9, 'F');
+            }
+            doc.setDrawColor(220, 228, 238);
+            doc.setLineWidth(0.2);
+            doc.line(21, y + 4, 189, y + 4);
+            doc.text(String(block.number), columns.number, y);
+            doc.text(block.weight.toFixed(2).replace('.', ','), columns.weight, y);
+            doc.text(String(block.hours), columns.hours, y);
+            doc.text(String(block.minutes), columns.minutes, y);
+            y += 9;
+        });
+
+        const totalHours = Math.floor(totalMinutes / 60);
+        const remainingMinutes = totalMinutes % 60;
+        y += 4;
+        doc.setFillColor(...orange);
+        doc.roundedRect(21, y - 7, 168, 14, 2, 2, 'F');
+        y += 2;
+        doc.setFont('helvetica', 'bold');
+        doc.setTextColor(255, 255, 255);
+        doc.text('TOTAIS', 25, y);
+        doc.text(`${totalWeight.toFixed(2).replace('.', ',')} g`, columns.weight, y);
+        doc.text(`${totalHours}h`, columns.hours, y);
+        doc.text(`${remainingMinutes} min`, columns.minutes, y);
     }
 }
 
