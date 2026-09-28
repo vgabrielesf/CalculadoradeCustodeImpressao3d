@@ -343,6 +343,8 @@ class Print3DCostCalculator {
         const wallLoops = document.getElementById('wallLoops').value.trim();
         const printId = document.getElementById('printId').value.trim() || 'Não informado';
         const dimensions = document.getElementById('dimensions').value.trim() || 'Não informado';
+        const pixEmail = 'vgabrielesf@gmail.com';
+        const pixCopyPaste = '00020126430014BR.GOV.BCB.PIX0121vgabrielesf@gmail.com5204000053039865802BR5925VITORIA GABRIELE DA SILVA6009SAO PAULO622605222TJx4MlFaAnTxLSFl8BDPo63047CDC';
         const finalPrice = document.getElementById('finalPrice').textContent;
         const horas = parseInt(document.getElementById('printHours').value, 10) || 0;
         const minutos = parseInt(document.getElementById('printMinutes').value, 10) || 0;
@@ -380,13 +382,14 @@ class Print3DCostCalculator {
             let enterprise;
             let calendario;
             let impressora;
-            let pendingIcons = 5;
+            let pix;
+            let pendingIcons = 6;
             const finish = () => {
                 pendingIcons -= 1;
                 if (pendingIcons === 0) {
                     this.drawInvoiceContent(doc, {
                         blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice,
-                        numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pessoa, papel, enterprise, calendario, impressora, complete
+                        numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pixEmail, pixCopyPaste, pessoa, papel, enterprise, calendario, impressora, pix, complete
                     });
                 }
             };
@@ -433,6 +436,7 @@ class Print3DCostCalculator {
             loadIcon('enterprise.png', (icon) => { enterprise = tintIcon(icon, blue); });
             loadIcon('calendario.png', (icon) => { calendario = icon; });
             loadIcon('impressora.png', (icon) => { impressora = icon; });
+            loadIcon('pix.jpeg', (icon) => { pix = icon; });
         };
 
         // Logo da prestadora, quando o arquivo estiver disponível.
@@ -451,7 +455,7 @@ class Print3DCostCalculator {
     }
 
     drawInvoiceContent(doc, details) {
-        const { blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice, numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pessoa, papel, enterprise, calendario, impressora, complete } = details;
+        const { blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice, numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pixEmail, pixCopyPaste, pessoa, papel, enterprise, calendario, impressora, pix, complete } = details;
         const section = (number, title, y) => {
             doc.setFillColor(...orange);
             doc.circle(margin + 3, y - 0.2, 3.2, 'F');
@@ -529,16 +533,50 @@ class Print3DCostCalculator {
         doc.text('serviço de impressão será realizado conforme especificações', 47, descriptionY + 14);
         doc.text('técnicas descritas nesse documento.', 47, descriptionY + 20);
 
-        doc.setDrawColor(...orange);
-        doc.setLineWidth(0.45);
-        doc.line(margin, 248, right, 248);
-        doc.setTextColor(...blue);
-        doc.setFontSize(11);
-        doc.text('VALOR TOTAL:', 137, 260);
-        doc.setFontSize(22);
-        doc.text(finalPrice, 137, 274);
+        const paymentY = descriptionY + 35;
+        const qrMaxSize = complete ? 34 : 55;
+        const qrY = paymentY + 8;
+        section(4, 'PAGAMENTO', paymentY);
+        if (pix) {
+            const qrRatio = pix.naturalWidth / pix.naturalHeight;
+            const qrWidth = qrRatio >= 1 ? qrMaxSize : qrMaxSize * qrRatio;
+            const qrHeight = qrRatio >= 1 ? qrMaxSize / qrRatio : qrMaxSize;
+            doc.addImage(pix, 'JPEG', margin, qrY, qrWidth, qrHeight);
+            const textX = margin + qrWidth + 12;
+            doc.setTextColor(...blue);
+            doc.setFontSize(9);
+            doc.text('Chave PIX:', textX, qrY + 5);
+            doc.setTextColor(...gray);
+            doc.text(pixEmail, textX, qrY + 11);
+            doc.setTextColor(...blue);
+            doc.text('Copia e Cola:', textX, qrY + 19);
+            doc.setTextColor(...gray);
+            doc.setFontSize(8);
+            const copyLines = doc.splitTextToSize(pixCopyPaste, right - textX);
+            doc.text(copyLines, textX, qrY + 24);
+            const textBottom = qrY + 24 + (copyLines.length * 3);
+            const totalLineY = Math.max(qrY + qrHeight + 5, textBottom + 4);
+            doc.setDrawColor(...orange);
+            doc.setLineWidth(0.45);
+            doc.line(margin, totalLineY, right, totalLineY);
+            doc.setTextColor(...blue);
+            doc.setFontSize(11);
+            doc.text('VALOR TOTAL:', 137, totalLineY + 10);
+            doc.setFontSize(22);
+            doc.text(finalPrice, 137, totalLineY + 24);
+        } else {
+            const totalLineY = qrY + 5;
+            doc.setDrawColor(...orange);
+            doc.setLineWidth(0.45);
+            doc.line(margin, totalLineY, right, totalLineY);
+            doc.setTextColor(...blue);
+            doc.setFontSize(11);
+            doc.text('VALOR TOTAL:', 137, totalLineY + 10);
+            doc.setFontSize(22);
+            doc.text(finalPrice, 137, totalLineY + 24);
+        }
 
-        doc.save(`Nota_Fiscal_${numeroNota}.pdf`);
+        doc.save(`Nota_de_Servico_${numeroNota}.pdf`);
     }
 }
 
