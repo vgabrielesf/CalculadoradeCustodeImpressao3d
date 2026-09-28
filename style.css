@@ -186,6 +186,92 @@ header p {
     flex-shrink: 0;
 }
 
+.section-heading-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+}
+
+.section-heading-row h2 {
+    margin-bottom: 20px;
+}
+
+.quote-toggle,
+.add-block-btn {
+    background: var(--brand-orange);
+    color: white;
+    border: none;
+    border-radius: 7px;
+    padding: 9px 14px;
+    cursor: pointer;
+    font: inherit;
+    font-size: 0.85rem;
+    font-weight: 600;
+}
+
+.quote-toggle {
+    font-weight: 400;
+}
+
+.quote-toggle:hover,
+.add-block-btn:hover {
+    filter: brightness(0.92);
+}
+
+.block-quote-panel {
+    padding: 16px;
+    margin-bottom: 20px;
+    background: var(--input-bg);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+}
+
+.block-row {
+    display: grid;
+    grid-template-columns: 0.8fr 1fr 1fr 1fr auto;
+    gap: 10px;
+    align-items: end;
+    margin-bottom: 10px;
+}
+
+.block-row label {
+    display: block;
+    margin-bottom: 4px;
+    color: var(--text-primary);
+    font-size: 0.85rem;
+}
+
+.block-row input {
+    width: 100%;
+    padding: 9px;
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    font: inherit;
+}
+
+.remove-block-btn {
+    height: 38px;
+    padding: 0 11px;
+    border: none;
+    border-radius: 6px;
+    background: #e53e3e;
+    color: white;
+    cursor: pointer;
+}
+
+.block-totals {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 18px;
+    margin-top: 14px;
+    padding-top: 12px;
+    border-top: 1px solid var(--input-border);
+    color: var(--text-primary);
+}
+
 .input-group {
     margin-bottom: 15px;
 }
@@ -525,6 +611,19 @@ footer a:hover {
     
     .time-inputs {
         grid-template-columns: 1fr;
+    }
+
+    .section-heading-row {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .block-row {
+        grid-template-columns: 1fr 1fr;
+    }
+
+    .remove-block-btn {
+        width: 100%;
     }
     
     .calculator,
