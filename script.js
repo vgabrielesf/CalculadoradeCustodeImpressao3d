@@ -1,3 +1,5 @@
+const URL_GOOGLE_SHEETS = 'https://script.google.com/macros/s/AKfycbx9gOrt1iU4ygFyPXpOv5QL9RtsOaZCtEq8R6Bg71uO7_I6C-JQy6HY6n-e4FBsTbWH/exec';
+
 function parseLocalizedNumber(value) {
     let normalized = String(value ?? '').trim().replace(/[^\d,.-]/g, '');
     const commaPosition = normalized.lastIndexOf(',');
@@ -381,6 +383,19 @@ class Print3DCostCalculator {
         return `NF-${date.getFullYear()}${(date.getMonth() + 1).toString().padStart(2, '0')}${date.getDate().toString().padStart(2, '0')}-${Math.floor(Math.random() * 1000).toString().padStart(3, '0')}`;
     }
 
+    salvarNotaNoGoogleSheets(dados) {
+        fetch(URL_GOOGLE_SHEETS, {
+            method: 'POST',
+            mode: 'no-cors',
+            headers: {
+                'Content-Type': 'text/plain;charset=utf-8'
+            },
+            body: JSON.stringify(dados)
+        }).catch((erro) => {
+            console.error('Erro ao salvar nota no Google Sheets:', erro);
+        });
+    }
+
     generateInvoice(complete = false) {
         // Verificar se há resultados para gerar a nota fiscal
         if (this.resultsDiv.classList.contains('hidden')) {
@@ -411,6 +426,23 @@ class Print3DCostCalculator {
         const horas = parseInt(document.getElementById('printHours').value, 10) || 0;
         const minutos = parseInt(document.getElementById('printMinutes').value, 10) || 0;
         const dataHoje = new Date();
+
+        if (!complete) {
+            this.salvarNotaNoGoogleSheets({
+                numeroNota,
+                cliente: clientName,
+                peso,
+                material: tipoFilamento,
+                horas,
+                minutos,
+                printId,
+                infill,
+                wallLoops,
+                dimensions,
+                precoFinal: finalPrice,
+                produtos: blocks
+            });
+        }
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
