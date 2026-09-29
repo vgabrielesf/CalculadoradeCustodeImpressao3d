@@ -24,6 +24,7 @@ class Print3DCostCalculator {
         this.historyList = document.getElementById('historyList');
         this.themeToggle = document.getElementById('themeToggle');
         this.orcamentoOficial = false;
+        this.initPricingMode();
         this.init();
     }
 
@@ -45,6 +46,34 @@ class Print3DCostCalculator {
         document.getElementById('generateInvoice').addEventListener('click', () => this.generateInvoice());
         document.getElementById('saveToSheets').addEventListener('click', () => this.saveCurrentNoteToSheets());
         document.getElementById('generateCompleteInvoice').addEventListener('click', () => this.generateInvoice(true));
+    }
+
+    initPricingMode() {
+        const pricingMode = document.getElementById('pricingMode');
+        pricingMode.addEventListener('change', () => this.updatePricingMode());
+        document.getElementById('quoteImage').addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            document.getElementById('quoteImageName').textContent = file
+                ? file.name
+                : 'Opcional';
+        });
+        this.updatePricingMode();
+    }
+
+    updatePricingMode() {
+        const isFixed = document.getElementById('pricingMode').value === 'fixed';
+        document.getElementById('fixedPriceGroup').classList.toggle('hidden', !isFixed);
+        document.getElementById('quoteImageGroup').classList.toggle('hidden', !isFixed);
+        document.querySelectorAll('.pricing-dependent').forEach((section) => {
+            section.classList.toggle('hidden', isFixed);
+        });
+        if (!isFixed) {
+            document.getElementById('quoteImage').value = '';
+            document.getElementById('quoteImageName').textContent = 'Opcional';
+        }
+        document.querySelector('.calculate-btn').textContent = isFixed
+            ? 'Gerar Orçamento'
+            : 'Calcular Custo';
     }
 
     initBlockQuote() {
@@ -176,6 +205,8 @@ class Print3DCostCalculator {
 
     getFormData() {
         return {
+            pricingMode: document.getElementById('pricingMode').value,
+            fixedPrice: parseLocalizedNumber(document.getElementById('fixedPrice').value),
             printTechnology: document.getElementById('printTechnology').value,
             filamentWeight: parseLocalizedNumber(document.getElementById('filamentWeight').value),
             filamentCost: parseLocalizedNumber(document.getElementById('filamentCost').value),
@@ -192,6 +223,14 @@ class Print3DCostCalculator {
     }
 
     validateData(data) {
+        if (data.pricingMode === 'fixed') {
+            if (data.fixedPrice <= 0) {
+                alert('Por favor, insira o preço fixo do orçamento.');
+                return false;
+            }
+            return true;
+        }
+
         if (data.filamentWeight <= 0) {
             alert('Por favor, insira o peso do filamento usado.');
             return false;
@@ -208,6 +247,20 @@ class Print3DCostCalculator {
     }
 
     performCalculations(data) {
+        if (data.pricingMode === 'fixed') {
+            return {
+                materialCost: 0,
+                energyCostTotal: 0,
+                laborCostTotal: 0,
+                maintenanceCostTotal: 0,
+                additionalCostTotal: 0,
+                totalCostWithoutProfit: data.fixedPrice,
+                profitAmount: 0,
+                finalPrice: data.fixedPrice,
+                printTimeHours: 0
+            };
+        }
+
         // Converter tempo para horas decimais
         const printTimeHours = data.printHours + (data.printMinutes / 60);
         
@@ -277,8 +330,8 @@ class Print3DCostCalculator {
     displayPrintSummary(data, costs) {
         const summary = document.getElementById('printSummary');
         const printTime = this.formatTime(data.printHours, data.printMinutes);
-        const costPerGram = costs.finalPrice / data.filamentWeight;
-        const costPerHour = costs.finalPrice / costs.printTimeHours;
+        const costPerGram = data.filamentWeight > 0 ? costs.finalPrice / data.filamentWeight : 0;
+        const costPerHour = costs.printTimeHours > 0 ? costs.finalPrice / costs.printTimeHours : 0;
         
         summary.innerHTML = `
             <p><strong>Material:</strong> ${data.filamentType}</p>
@@ -290,6 +343,7 @@ class Print3DCostCalculator {
             <p><strong>Mão de obra por hora:</strong> ${this.formatCurrency(data.laborCost)}/h</p>
             <p><strong>Manutenção + adicional por hora:</strong> ${this.formatCurrency(data.maintenanceCost + data.additionalHourlyCost)}/h</p>
             <p><strong>Margem de lucro aplicada:</strong> ${data.profitMargin}%</p>
+            ${data.pricingMode === 'fixed' ? '<p><strong>Tipo:</strong> Preço fixo</p>' : ''}
         `;
     }
 
@@ -427,6 +481,37 @@ class Print3DCostCalculator {
         });
     }
 
+    getImageData() {
+        if (document.getElementById('pricingMode').value !== 'fixed') {
+            return Promise.resolve(null);
+        }
+
+        const file = document.getElementById('quoteImage').files[0];
+        if (!file) {
+            return Promise.resolve(null);
+        }
+
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve({
+                dataUrl: reader.result,
+                name: file.name
+            });
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+
+    async salvarNotaComImagem(dados, tipoNota) {
+        const imagem = await this.getImageData();
+        this.salvarNotaNoGoogleSheets({
+            ...dados,
+            tipoNota,
+            imagemData: imagem ? imagem.dataUrl : '',
+            imagemNome: imagem ? imagem.name : ''
+        });
+    }
+
     getDadosNotaServico() {
         const blocks = Array.from(document.querySelectorAll('.block-row'))
             .map((row, index) => {
@@ -448,6 +533,7 @@ class Print3DCostCalculator {
             .map(({ preenchido, ...block }) => block);
 
         return {
+            pricingMode: document.getElementById('pricingMode').value,
             numeroNota: document.getElementById('serviceNumber').value.trim() || this.createInvoiceNumber(),
             cliente: document.getElementById('clientName').value.trim() || 'Não informado',
             peso: parseLocalizedNumber(document.getElementById('filamentWeight').value),
@@ -470,10 +556,7 @@ class Print3DCostCalculator {
             return;
         }
 
-        this.salvarNotaNoGoogleSheets({
-            ...this.getDadosNotaServico(),
-            tipoNota: 'Nota de Serviço'
-        });
+        this.salvarNotaComImagem(this.getDadosNotaServico(), 'Nota de Serviço');
 
         const button = document.getElementById('saveToSheets');
         const originalText = button.textContent;
@@ -496,10 +579,7 @@ class Print3DCostCalculator {
         const pixCopyPaste = '00020126430014BR.GOV.BCB.PIX0121vgabrielesf@gmail.com5204000053039865802BR5925VITORIA GABRIELE DA SILVA6009SAO PAULO622605222TJx4MlFaAnTxLSFl8BDPo63047CDC';
         const dataHoje = new Date();
 
-        this.salvarNotaNoGoogleSheets({
-            ...notaServico,
-            tipoNota: complete ? 'NS Completa' : 'Nota de Serviço'
-        });
+        this.salvarNotaComImagem(notaServico, complete ? 'NS Completa' : 'Nota de Serviço');
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
