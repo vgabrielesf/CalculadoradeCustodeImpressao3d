@@ -1,4 +1,4 @@
-const URL_GOOGLE_SHEETS = 'https://script.google.com/macros/s/AKfycbx9gOrt1iU4ygFyPXpOv5QL9RtsOaZCtEq8R6Bg71uO7_I6C-JQy6HY6n-e4FBsTbWH/exec';
+const URL_GOOGLE_SHEETS = 'https://script.google.com/macros/s/AKfycbyaJ22KfiTaxXIIAud_6vxVui2HrwVJA2Ot_Ee-tXO_WTDjK1CkUIpRAgNdV76hFAM/exec';
 
 function parseLocalizedNumber(value) {
     let normalized = String(value ?? '').trim().replace(/[^\d,.-]/g, '');
