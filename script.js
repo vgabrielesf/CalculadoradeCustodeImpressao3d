@@ -67,6 +67,9 @@ class Print3DCostCalculator {
         document.querySelectorAll('.pricing-dependent').forEach((section) => {
             section.classList.toggle('hidden', isFixed);
         });
+        document.querySelectorAll('.pricing-dependent input, .pricing-dependent select').forEach((field) => {
+            field.disabled = isFixed;
+        });
         if (!isFixed) {
             document.getElementById('quoteImage').value = '';
             document.getElementById('quoteImageName').textContent = 'Opcional';
