@@ -35,6 +35,7 @@ class Print3DCostCalculator {
         document.getElementById('printTechnology').addEventListener('change', () => this.updatePrintTechnology());
         this.initBlockQuote();
         this.initOfficialQuote();
+        this.initCollapsibleSections();
         document.getElementById('serviceNumber').value = this.createInvoiceNumber();
         this.updatePrintTechnology();
         this.loadTheme();
@@ -71,6 +72,20 @@ class Print3DCostCalculator {
             button.setAttribute('aria-pressed', String(this.orcamentoOficial));
             button.classList.toggle('official', this.orcamentoOficial);
             button.classList.toggle('unofficial', !this.orcamentoOficial);
+        });
+    }
+
+    initCollapsibleSections() {
+        document.querySelectorAll('.collapsible-section').forEach((section) => {
+            const button = section.querySelector('.section-collapse-toggle');
+            const icon = button.querySelector('.material-symbols-outlined');
+
+            button.addEventListener('click', () => {
+                const expanded = section.classList.toggle('collapsed') === false;
+                button.setAttribute('aria-expanded', String(expanded));
+                button.setAttribute('title', expanded ? 'Ocultar informações' : 'Mostrar informações');
+                icon.textContent = expanded ? 'expand_less' : 'expand_more';
+            });
         });
     }
 
