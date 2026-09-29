@@ -414,14 +414,23 @@ class Print3DCostCalculator {
 
     getDadosNotaServico() {
         const blocks = Array.from(document.querySelectorAll('.block-row'))
-            .map((row, index) => ({
-                number: index + 1,
-                product: row.querySelector('.block-product').value.trim() || `Produto ${index + 1}`,
-                weight: parseLocalizedNumber(row.querySelector('.block-weight').value),
-                hours: parseLocalizedNumber(row.querySelector('.block-hours').value),
-                minutes: parseLocalizedNumber(row.querySelector('.block-minutes').value)
-            }))
-            .filter((block) => block.weight > 0 || block.hours > 0 || block.minutes > 0);
+            .map((row, index) => {
+                const product = row.querySelector('.block-product').value.trim();
+                const weight = parseLocalizedNumber(row.querySelector('.block-weight').value);
+                const hours = parseLocalizedNumber(row.querySelector('.block-hours').value);
+                const minutes = parseLocalizedNumber(row.querySelector('.block-minutes').value);
+
+                return {
+                    number: index + 1,
+                    product: product || `Produto ${index + 1}`,
+                    weight,
+                    hours,
+                    minutes,
+                    preenchido: Boolean(product) || weight > 0 || hours > 0 || minutes > 0
+                };
+            })
+            .filter((block) => block.preenchido)
+            .map(({ preenchido, ...block }) => block);
 
         return {
             numeroNota: document.getElementById('serviceNumber').value.trim() || this.createInvoiceNumber(),
