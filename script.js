@@ -23,6 +23,7 @@ class Print3DCostCalculator {
         this.resultsDiv = document.getElementById('results');
         this.historyList = document.getElementById('historyList');
         this.themeToggle = document.getElementById('themeToggle');
+        this.orcamentoOficial = false;
         this.init();
     }
 
@@ -33,6 +34,7 @@ class Print3DCostCalculator {
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
         document.getElementById('printTechnology').addEventListener('change', () => this.updatePrintTechnology());
         this.initBlockQuote();
+        this.initOfficialQuote();
         document.getElementById('serviceNumber').value = this.createInvoiceNumber();
         this.updatePrintTechnology();
         this.loadTheme();
@@ -40,6 +42,7 @@ class Print3DCostCalculator {
         
         // Event listener para gerar nota fiscal
         document.getElementById('generateInvoice').addEventListener('click', () => this.generateInvoice());
+        document.getElementById('saveToSheets').addEventListener('click', () => this.saveCurrentNoteToSheets());
         document.getElementById('generateCompleteInvoice').addEventListener('click', () => this.generateInvoice(true));
     }
 
@@ -56,6 +59,19 @@ class Print3DCostCalculator {
             }
         });
         document.getElementById('addBlock').addEventListener('click', () => this.addBlockRow());
+    }
+
+    initOfficialQuote() {
+        const button = document.getElementById('toggleOfficialQuote');
+        button.addEventListener('click', () => {
+            this.orcamentoOficial = !this.orcamentoOficial;
+            button.textContent = this.orcamentoOficial
+                ? 'Orçamento oficial'
+                : 'Orçamento não oficial';
+            button.setAttribute('aria-pressed', String(this.orcamentoOficial));
+            button.classList.toggle('official', this.orcamentoOficial);
+            button.classList.toggle('unofficial', !this.orcamentoOficial);
+        });
     }
 
     addBlockRow() {
@@ -396,21 +412,7 @@ class Print3DCostCalculator {
         });
     }
 
-    generateInvoice(complete = false) {
-        // Verificar se há resultados para gerar a nota fiscal
-        if (this.resultsDiv.classList.contains('hidden')) {
-            alert('Por favor, calcule o custo primeiro antes de gerar a nota fiscal.');
-            return;
-        }
-
-        const peso = parseLocalizedNumber(document.getElementById('filamentWeight').value);
-        const tipoFilamento = document.getElementById('filamentType').value;
-        const numeroNota = document.getElementById('serviceNumber').value.trim() || this.createInvoiceNumber();
-        const clientName = document.getElementById('clientName').value.trim() || 'Não informado';
-        const infill = document.getElementById('infill').value.trim();
-        const wallLoops = document.getElementById('wallLoops').value.trim();
-        const printId = document.getElementById('printId').value.trim() || 'Não informado';
-        const dimensions = document.getElementById('dimensions').value.trim() || 'Não informado';
+    getDadosNotaServico() {
         const blocks = Array.from(document.querySelectorAll('.block-row'))
             .map((row, index) => ({
                 number: index + 1,
@@ -420,29 +422,60 @@ class Print3DCostCalculator {
                 minutes: parseLocalizedNumber(row.querySelector('.block-minutes').value)
             }))
             .filter((block) => block.weight > 0 || block.hours > 0 || block.minutes > 0);
+
+        return {
+            numeroNota: document.getElementById('serviceNumber').value.trim() || this.createInvoiceNumber(),
+            cliente: document.getElementById('clientName').value.trim() || 'Não informado',
+            peso: parseLocalizedNumber(document.getElementById('filamentWeight').value),
+            material: document.getElementById('filamentType').value,
+            horas: parseInt(document.getElementById('printHours').value, 10) || 0,
+            minutos: parseInt(document.getElementById('printMinutes').value, 10) || 0,
+            printId: document.getElementById('printId').value.trim() || 'Não informado',
+            infill: document.getElementById('infill').value.trim(),
+            wallLoops: document.getElementById('wallLoops').value.trim(),
+            dimensions: document.getElementById('dimensions').value.trim() || 'Não informado',
+            precoFinal: document.getElementById('finalPrice').textContent,
+            statusOrcamento: this.orcamentoOficial ? 'Oficial' : 'Não oficial',
+            produtos: blocks
+        };
+    }
+
+    saveCurrentNoteToSheets() {
+        if (this.resultsDiv.classList.contains('hidden')) {
+            alert('Por favor, calcule o custo primeiro antes de salvar na planilha.');
+            return;
+        }
+
+        this.salvarNotaNoGoogleSheets({
+            ...this.getDadosNotaServico(),
+            tipoNota: 'Nota de Serviço'
+        });
+
+        const button = document.getElementById('saveToSheets');
+        const originalText = button.textContent;
+        button.textContent = 'Salvo na Planilha!';
+        setTimeout(() => {
+            button.textContent = originalText;
+        }, 2500);
+    }
+
+    generateInvoice(complete = false) {
+        // Verificar se há resultados para gerar a nota fiscal
+        if (this.resultsDiv.classList.contains('hidden')) {
+            alert('Por favor, calcule o custo primeiro antes de gerar a nota fiscal.');
+            return;
+        }
+
+        const notaServico = this.getDadosNotaServico();
+        const { peso, material: tipoFilamento, numeroNota, cliente: clientName, infill, wallLoops, printId, dimensions, horas, minutos, precoFinal: finalPrice, statusOrcamento, produtos: blocks } = notaServico;
         const pixEmail = 'vgabrielesf@gmail.com';
         const pixCopyPaste = '00020126430014BR.GOV.BCB.PIX0121vgabrielesf@gmail.com5204000053039865802BR5925VITORIA GABRIELE DA SILVA6009SAO PAULO622605222TJx4MlFaAnTxLSFl8BDPo63047CDC';
-        const finalPrice = document.getElementById('finalPrice').textContent;
-        const horas = parseInt(document.getElementById('printHours').value, 10) || 0;
-        const minutos = parseInt(document.getElementById('printMinutes').value, 10) || 0;
         const dataHoje = new Date();
 
-        if (!complete) {
-            this.salvarNotaNoGoogleSheets({
-                numeroNota,
-                cliente: clientName,
-                peso,
-                material: tipoFilamento,
-                horas,
-                minutos,
-                printId,
-                infill,
-                wallLoops,
-                dimensions,
-                precoFinal: finalPrice,
-                produtos: blocks
-            });
-        }
+        this.salvarNotaNoGoogleSheets({
+            ...notaServico,
+            tipoNota: complete ? 'NS Completa' : 'Nota de Serviço'
+        });
 
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
@@ -483,7 +516,7 @@ class Print3DCostCalculator {
                 if (pendingIcons === 0) {
                     this.drawInvoiceContent(doc, {
                         blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice,
-                        numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pixEmail, pixCopyPaste, blocks, pessoa, papel, enterprise, calendario, impressora, pix, complete
+                        numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, statusOrcamento, pixEmail, pixCopyPaste, blocks, pessoa, papel, enterprise, calendario, impressora, pix, complete
                     });
                 }
             };
@@ -549,7 +582,7 @@ class Print3DCostCalculator {
     }
 
     drawInvoiceContent(doc, details) {
-        const { blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice, numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, pixEmail, pixCopyPaste, blocks, pessoa, papel, enterprise, calendario, impressora, pix, complete } = details;
+        const { blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice, numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, statusOrcamento, pixEmail, pixCopyPaste, blocks, pessoa, papel, enterprise, calendario, impressora, pix, complete } = details;
         const section = (number, title, y) => {
             doc.setFillColor(...orange);
             doc.circle(margin + 3, y - 0.2, 3.2, 'F');
@@ -585,6 +618,7 @@ class Print3DCostCalculator {
         doc.setTextColor(...blue);
         doc.setFontSize(10);
         doc.text('@jg_print3d', 151, 91);
+        doc.text(`Orçamento: ${statusOrcamento}`, 151, 100);
 
         section(2, 'ESPECIFICAÇÕES TÉCNICAS', 122);
         doc.setDrawColor(...orange);
