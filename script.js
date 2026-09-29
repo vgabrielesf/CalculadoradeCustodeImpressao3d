@@ -516,6 +516,8 @@ class Print3DCostCalculator {
     }
 
     getDadosNotaServico() {
+        const pricingMode = document.getElementById('pricingMode').value;
+        const precoFixo = parseLocalizedNumber(document.getElementById('fixedPrice').value);
         const blocks = Array.from(document.querySelectorAll('.block-row'))
             .map((row, index) => {
                 const product = row.querySelector('.block-product').value.trim();
@@ -536,8 +538,8 @@ class Print3DCostCalculator {
             .map(({ preenchido, ...block }) => block);
 
         return {
-            pricingMode: document.getElementById('pricingMode').value,
-            precoFixo: parseLocalizedNumber(document.getElementById('fixedPrice').value),
+            pricingMode,
+            precoFixo,
             numeroNota: document.getElementById('serviceNumber').value.trim() || this.createInvoiceNumber(),
             cliente: document.getElementById('clientName').value.trim() || 'Não informado',
             peso: parseLocalizedNumber(document.getElementById('filamentWeight').value),
@@ -548,7 +550,9 @@ class Print3DCostCalculator {
             infill: document.getElementById('infill').value.trim(),
             wallLoops: document.getElementById('wallLoops').value.trim(),
             dimensions: document.getElementById('dimensions').value.trim() || 'Não informado',
-            precoFinal: document.getElementById('finalPrice').textContent,
+            precoFinal: pricingMode === 'fixed'
+                ? precoFixo
+                : parseLocalizedNumber(document.getElementById('finalPrice').textContent),
             statusOrcamento: this.orcamentoOficial ? 'Oficial' : 'Não oficial',
             produtos: blocks
         };
