@@ -347,6 +347,56 @@ header p {
     box-shadow: 0 0 0 3px rgba(255, 111, 36, 0.16);
 }
 
+#pricingMode {
+    border-color: var(--brand-orange);
+    background: #fff5ee;
+    color: var(--brand-blue);
+    font-weight: 600;
+}
+
+#pricingMode:focus {
+    border-color: var(--brand-orange);
+    box-shadow: 0 0 0 3px rgba(255, 111, 36, 0.2);
+}
+
+#quoteImage {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    opacity: 0;
+    pointer-events: none;
+}
+
+.image-upload-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    width: fit-content;
+    padding: 10px 15px;
+    border: 2px solid var(--brand-orange);
+    border-radius: 8px;
+    background: var(--brand-orange);
+    color: white;
+    cursor: pointer;
+    font-weight: 600;
+    transition: filter 0.2s ease, transform 0.2s ease;
+}
+
+.image-upload-btn:hover {
+    filter: brightness(0.92);
+    transform: translateY(-1px);
+}
+
+.image-upload-btn .material-symbols-outlined {
+    font-size: 20px;
+}
+
+#quoteImageName {
+    display: block;
+    margin-top: 6px;
+    color: var(--text-secondary);
+}
+
 .time-inputs {
     display: grid;
     grid-template-columns: 1fr 1fr;
@@ -719,6 +769,11 @@ footer a:hover {
         display: block;
         width: 100%;
         margin-left: 0 !important;
+    }
+
+    .image-upload-btn {
+        width: 100%;
+        justify-content: center;
     }
     
     .theme-btn {
