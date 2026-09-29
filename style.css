@@ -197,6 +197,38 @@ header p {
     margin-bottom: 20px;
 }
 
+.collapsible-section.collapsed .collapsible-content {
+    display: none;
+}
+
+.collapsible-section .section-heading-row {
+    align-items: center;
+}
+
+.section-collapse-toggle {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 36px;
+    height: 36px;
+    margin-left: auto;
+    padding: 0;
+    border: 1px solid var(--input-border);
+    border-radius: 7px;
+    background: var(--input-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.section-collapse-toggle:hover {
+    background: var(--input-focus);
+    color: white;
+}
+
+.section-collapse-toggle .material-symbols-outlined {
+    font-size: 22px;
+}
+
 .quote-toggle,
 .add-block-btn {
     background: var(--brand-orange);
@@ -647,6 +679,22 @@ footer a:hover {
         margin-bottom: 4px;
     }
 
+    .collapsible-section .section-heading-row {
+        flex-direction: row;
+        align-items: center;
+        gap: 8px;
+    }
+
+    .collapsible-section .section-heading-row h2 {
+        flex: 1;
+        margin-bottom: 0;
+    }
+
+    .collapsible-section .section-collapse-toggle {
+        flex-shrink: 0;
+        margin-left: auto;
+    }
+
     .section-heading-row .quote-toggle {
         margin-top: 0;
         width: 100%;
@@ -665,6 +713,12 @@ footer a:hover {
     .calculator,
     .history {
         padding: 20px;
+    }
+
+    .results .save-btn {
+        display: block;
+        width: 100%;
+        margin-left: 0 !important;
     }
     
     .theme-btn {
