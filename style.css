@@ -214,6 +214,18 @@ header p {
     font-weight: 400;
 }
 
+#toggleOfficialQuote {
+    transition: background-color 0.25s ease, transform 0.25s ease;
+}
+
+#toggleOfficialQuote.official {
+    background: #48bb78;
+}
+
+#toggleOfficialQuote.unofficial {
+    background: var(--brand-orange);
+}
+
 .quote-toggle:hover,
 .add-block-btn:hover {
     filter: brightness(0.92);
