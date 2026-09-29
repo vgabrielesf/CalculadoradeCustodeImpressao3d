@@ -63,6 +63,7 @@ class Print3DCostCalculator {
     updatePricingMode() {
         const isFixed = document.getElementById('pricingMode').value === 'fixed';
         document.getElementById('fixedPriceGroup').classList.toggle('hidden', !isFixed);
+        document.getElementById('fixedProductGroup').classList.toggle('hidden', !isFixed);
         document.getElementById('quoteImageGroup').classList.toggle('hidden', !isFixed);
         document.querySelectorAll('.pricing-dependent').forEach((section) => {
             section.classList.toggle('hidden', isFixed);
@@ -71,6 +72,7 @@ class Print3DCostCalculator {
             field.disabled = isFixed;
         });
         if (!isFixed) {
+            document.getElementById('fixedProductName').value = '';
             document.getElementById('quoteImage').value = '';
             document.getElementById('quoteImageName').textContent = 'Opcional';
         }
@@ -518,6 +520,7 @@ class Print3DCostCalculator {
     getDadosNotaServico() {
         const pricingMode = document.getElementById('pricingMode').value;
         const precoFixo = parseLocalizedNumber(document.getElementById('fixedPrice').value);
+        const nomeProduto = document.getElementById('fixedProductName').value.trim();
         const blocks = Array.from(document.querySelectorAll('.block-row'))
             .map((row, index) => {
                 const product = row.querySelector('.block-product').value.trim();
@@ -540,6 +543,7 @@ class Print3DCostCalculator {
         return {
             pricingMode,
             precoFixo,
+            nomeProduto,
             numeroNota: document.getElementById('serviceNumber').value.trim() || this.createInvoiceNumber(),
             cliente: document.getElementById('clientName').value.trim() || 'Não informado',
             peso: parseLocalizedNumber(document.getElementById('filamentWeight').value),
