@@ -39,7 +39,10 @@
                 </div>
 
                 <div class="section">
-                    <h2><span class="material-symbols-outlined">description</span> Dados</h2>
+                    <div class="section-heading-row">
+                        <h2><span class="material-symbols-outlined">description</span> Dados</h2>
+                        <button type="button" id="toggleOfficialQuote" class="quote-toggle unofficial" aria-pressed="false">Orçamento não oficial</button>
+                    </div>
                     <div class="input-group">
                         <label for="serviceNumber">Número da nota de serviço:</label>
                         <input type="text" id="serviceNumber" required>
@@ -196,8 +199,9 @@
                 </div>
 
                 <button id="generateInvoice" class="save-btn" style="background:#ff6f24;">Nota de Serviço</button>
+                <button id="saveToSheets" class="save-btn" style="background:#0f9d58; margin-left:10px;">Salvar na Planilha</button>
                 <button id="generateCompleteInvoice" class="save-btn" style="background:#1f4f85; margin-left:10px;">NS Completa</button>
-                <button id="saveDraft" class="save-btn" style="background:#48bb78; margin-left:10px;">Salvar Rascunho</button>
+                <button id="saveDraft" class="save-btn" style="background:#48bb78; margin-left:10px;">Salvar Localmente</button>
                 <button id="generatePdf" class="save-btn" style="background:#4299e1; margin-left:10px;">Memorial de Cálculo</button>
             </div>
         </div>
@@ -212,6 +216,7 @@
 
         <footer>
             <p>© Copyright 2026 Vitória Gabriele</p>
+            <p><a href="https://docs.google.com/spreadsheets/d/179SVka8_IByWgbVHBetxppz1BxlZ4KkIHu5PudqwkF8/edit?gid=0#gid=0" target="_blank" rel="noopener noreferrer">Clique aqui para acessar a planilha</a></p>
             <p><a href="https://vgabrielesf.github.io/CalculadoradeCustodeImpressao3dv1/" target="_blank" rel="noopener noreferrer">Clique aqui para acessar a versão anterior</a></p>
         </footer>
     </div>
