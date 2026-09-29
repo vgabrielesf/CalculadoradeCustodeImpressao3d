@@ -472,7 +472,7 @@ class Print3DCostCalculator {
     }
 
     salvarNotaNoGoogleSheets(dados) {
-        fetch(URL_GOOGLE_SHEETS, {
+        return fetch(URL_GOOGLE_SHEETS, {
             method: 'POST',
             mode: 'no-cors',
             headers: {
@@ -507,7 +507,7 @@ class Print3DCostCalculator {
 
     async salvarNotaComImagem(dados, tipoNota) {
         const imagem = await this.getImageData();
-        this.salvarNotaNoGoogleSheets({
+        return this.salvarNotaNoGoogleSheets({
             ...dados,
             tipoNota,
             imagemData: imagem ? imagem.dataUrl : '',
@@ -537,6 +537,7 @@ class Print3DCostCalculator {
 
         return {
             pricingMode: document.getElementById('pricingMode').value,
+            precoFixo: parseLocalizedNumber(document.getElementById('fixedPrice').value),
             numeroNota: document.getElementById('serviceNumber').value.trim() || this.createInvoiceNumber(),
             cliente: document.getElementById('clientName').value.trim() || 'Não informado',
             peso: parseLocalizedNumber(document.getElementById('filamentWeight').value),
@@ -553,17 +554,24 @@ class Print3DCostCalculator {
         };
     }
 
-    saveCurrentNoteToSheets() {
+    async saveCurrentNoteToSheets() {
         if (this.resultsDiv.classList.contains('hidden')) {
             alert('Por favor, calcule o custo primeiro antes de salvar na planilha.');
             return;
         }
 
-        this.salvarNotaComImagem(this.getDadosNotaServico(), 'Nota de Serviço');
-
         const button = document.getElementById('saveToSheets');
         const originalText = button.textContent;
-        button.textContent = 'Salvo na Planilha!';
+        button.textContent = 'Salvando...';
+
+        try {
+            await this.salvarNotaComImagem(this.getDadosNotaServico(), 'Nota de Serviço');
+            button.textContent = 'Salvo na Planilha!';
+        } catch (erro) {
+            console.error('Erro ao salvar orçamento:', erro);
+            button.textContent = 'Erro ao salvar';
+        }
+
         setTimeout(() => {
             button.textContent = originalText;
         }, 2500);
