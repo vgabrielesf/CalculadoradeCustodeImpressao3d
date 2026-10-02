@@ -1,4 +1,6 @@
 const URL_GOOGLE_SHEETS = 'https://script.google.com/macros/s/AKfycbyaJ22KfiTaxXIIAud_6vxVui2HrwVJA2Ot_Ee-tXO_WTDjK1CkUIpRAgNdV76hFAM/exec';
+const URL_PLANILHA = 'https://docs.google.com/spreadsheets/d/179SVka8_IByWgbVHBetxppz1BxlZ4KkIHu5PudqwkF8/edit?gid=0#gid=0';
+const SENHA_PLANILHA = 'abel23';
 
 function parseLocalizedNumber(value) {
     let normalized = String(value ?? '').trim().replace(/[^\d,.-]/g, '');
@@ -30,6 +32,23 @@ class Print3DCostCalculator {
 
     init() {
         this.form.addEventListener('submit', (e) => this.calculateCost(e));
+        const spreadsheetLink = document.getElementById('spreadsheetLink');
+        const abrirPlanilha = () => {
+            const senha = window.prompt('Digite a senha para acessar a planilha:');
+
+            if (senha === SENHA_PLANILHA) {
+                window.open(URL_PLANILHA, '_blank', 'noopener,noreferrer');
+            } else {
+                window.alert('Senha incorreta.');
+            }
+        };
+        spreadsheetLink.addEventListener('click', abrirPlanilha);
+        spreadsheetLink.addEventListener('keydown', (event) => {
+            if (event.key === 'Enter' || event.key === ' ') {
+                event.preventDefault();
+                abrirPlanilha();
+            }
+        });
         document.getElementById('saveDraft').addEventListener('click', () => this.saveResult());
         document.getElementById('clearHistory').addEventListener('click', () => this.clearHistory());
         this.themeToggle.addEventListener('click', () => this.toggleTheme());
@@ -592,6 +611,11 @@ class Print3DCostCalculator {
             return;
         }
 
+        if (!window.jspdf || typeof window.jspdf.jsPDF !== 'function') {
+            alert('Não foi possível carregar o gerador de PDF. Verifique sua conexão com a internet e tente novamente.');
+            return;
+        }
+
         const notaServico = this.getDadosNotaServico();
         const { peso, material: tipoFilamento, numeroNota, cliente: clientName, infill, wallLoops, printId, dimensions, horas, minutos, precoFinal: finalPrice, statusOrcamento, produtos: blocks } = notaServico;
         const pixEmail = 'vgabrielesf@gmail.com';
@@ -706,6 +730,7 @@ class Print3DCostCalculator {
 
     drawInvoiceContent(doc, details) {
         const { blue, orange, gray, margin, right, peso, tipoFilamento, finalPrice, numeroNota, dateText, timeText, clientName, infill, wallLoops, printId, dimensions, statusOrcamento, pixEmail, pixCopyPaste, blocks, pessoa, papel, enterprise, calendario, impressora, pix, complete } = details;
+        const formattedFinalPrice = this.formatCurrency(finalPrice);
         const section = (number, title, y) => {
             doc.setFillColor(...orange);
             doc.circle(margin + 3, y - 0.2, 3.2, 'F');
@@ -814,7 +839,7 @@ class Print3DCostCalculator {
             doc.setFontSize(11);
             doc.text('VALOR TOTAL:', 137, totalLineY + 10);
             doc.setFontSize(22);
-            doc.text(finalPrice, 137, totalLineY + 24);
+            doc.text(formattedFinalPrice, 137, totalLineY + 24);
         } else {
             const totalLineY = qrY + 5;
             doc.setDrawColor(...orange);
@@ -824,7 +849,7 @@ class Print3DCostCalculator {
             doc.setFontSize(11);
             doc.text('VALOR TOTAL:', 137, totalLineY + 10);
             doc.setFontSize(22);
-            doc.text(finalPrice, 137, totalLineY + 24);
+            doc.text(formattedFinalPrice, 137, totalLineY + 24);
         }
 
         if (blocks.length > 0) {
